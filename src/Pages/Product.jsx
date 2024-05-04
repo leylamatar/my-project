@@ -1,17 +1,21 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import ProductCard from "../Components/ProductCard";
 import { useDispatch, useSelector } from "react-redux";
 import Modal from "../Components/Modal";
 import Input from "../Components/Input";
 import Button from "../Components/Button";
-import { createDataFunc } from "../redux/dataSlice";
+import { createDataFunc, updateDataFunc } from "../redux/dataSlice";
 import { modalFunc } from "../redux/modalSlice";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const Product = () => {
   const { modal } = useSelector((state) => state.modal);
-  const { data } = useSelector((state) => state.data);
+  const { data, keyword } = useSelector((state) => state.data);
 
   const dispatch = useDispatch();
+  const location = useLocation();
+  const navigate = useNavigate();
+
   const [productInfo,setProductInfo] = useState({name:"", price:"",url:""})
   const onChangeFunc = (e,type)=>{
       if(type == "url"){
@@ -25,15 +29,32 @@ const Product = () => {
 
       
   }
+  let loc = location?.search.split('=')[1]
+  useEffect(() => {
+    if(loc){
+      setProductInfo(data.find(dt => dt.id == loc))
+    }
+
+  },[loc])
 console.log(data,"data")
 
   const buttonFunc = () => {
     dispatch(createDataFunc({...productInfo, id: data.length + 1})) 
     dispatch(modalFunc());
-  };
+  }
+
+  const buttonUpdateFunc = () => {
+    dispatch(updateDataFunc({...productInfo, id: loc}))
+    dispatch(modalFunc());
+    navigate('/')
+  }
+
+
+
   const contentModal = (
     <>
       <Input
+       value={productInfo.name}
         type={"text"}
         placeholder={"Add Product"}
         name={"name"}
@@ -41,6 +62,7 @@ console.log(data,"data")
         onChange={(e) => onChangeFunc(e, "name")}
       />
       <Input
+       value={productInfo.price}
         type={"text"}
         placeholder={"Add Price"}
         name={"price"}
@@ -55,14 +77,23 @@ console.log(data,"data")
         id={"url"}
         onChange={(e) => onChangeFunc(e, "url")}
       />
-      <Button btnText={"Create"} onClick={buttonFunc} />
+      <Button btnText={loc ? "update product" : "Create New Product"} onClick={loc ? buttonUpdateFunc : buttonFunc} />
     </>
   );
+
+  const filteredItems = data.filter(dt => dt.name.toLowerCase().includes(keyword.toLowerCase()));
+
+
+
+
+
+
+
   return (
     <div>
       <div className="flex items-center flex-wrap my-4 ">
         {
-          data?.map((dt,i) => (
+          filteredItems?.map((dt,i) => (
             <ProductCard key={i} dt={dt}/>
           )
           )
@@ -72,7 +103,7 @@ console.log(data,"data")
       {modal && (
         <Modal
           content={contentModal}
-          title={"Create New Product"}
+          title={loc ? "update product" : "Create New Product"}
           
           
         />
